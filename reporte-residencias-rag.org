@@ -28,7 +28,6 @@
 - [ ] Confirmar las fechas exactas de inicio y fin de la residencia.
 - [ ] PENDIENTE: autorización de la empresa para publicar las mediciones del prototipo. La sección está marcada :noexport: y no sale en el PDF hasta quitar esa etiqueta.
 - [ ] Llenar la columna "Resultado" de la tabla de métricas técnicas cuando se haga la corrida oficial.
-- [ ] Comprobar cada referencia y poner la fecha de consulta en las fuentes virtuales.
 - [ ] Verificar la tabla comparativa de bases vectoriales contra la documentación oficial.
 
 * Hoja membretada con datos de la residencia
@@ -553,7 +552,37 @@ Este reporte se redactó en Org mode, el formato de documentos de texto plano de
 - *CLI de .NET (=dotnet=):* herramienta de línea de comandos para compilar la solución y ejecutar las suites de pruebas (=dotnet build=, =dotnet test=).
 
 ** Trabajos relacionados
-/[Pendiente de investigación bibliográfica. Sugerencias: Lewis et al. (2020) como trabajo fundacional; Gao et al. (2023) como revisión de RAG; estudios de RAG en manufactura, salud o ámbito legal, donde la trazabilidad también es requisito; Es et al. (2024) sobre evaluación de RAG (RAGAS).]/
+Tres trabajos recientes sirven de referencia para este proyecto: una revisión general de RAG, un reporte de experiencia sobre construir sistemas RAG a partir de documentos PDF y una revisión sistemática de RAG en un dominio regulado.
+
+*** Revisión general de RAG
+Gao et al. (2023) revisan la evolución de RAG y la organizan en tres paradigmas: /RAG ingenuo/ (indexar, recuperar y generar), /RAG avanzado/, que agrega pasos antes y después de la recuperación, como la optimización de la consulta o el reordenamiento de resultados, y /RAG modular/, que permite intercambiar componentes y combinarlos en flujos iterativos o adaptativos. Señalan como fallas típicas del RAG ingenuo la baja precisión de la recuperación, las alucinaciones y el contexto redundante, y concluyen que los métodos de evaluación todavía no están maduros ni estandarizados.
+
+Con esa clasificación, el asistente de este proyecto se ubica en el RAG avanzado: además del flujo básico, aplica una instrucción a la consulta antes de recuperar, filtra por permisos e idioma dentro de la búsqueda y verifica las citas después de generar.
+
+*** RAG a partir de documentos PDF
+Khan et al. (2024) documentan la construcción de sistemas RAG sobre documentos PDF y describen un proceso de siete pasos: recolección de datos, preprocesamiento y fragmentación, vectorización en un almacén vectorial, recuperación, aumento del contexto, generación y salida. Comparan una ruta con un servicio comercial en la nube y otra con un modelo abierto ejecutado localmente con Ollama, y destacan que la segunda mantiene los datos dentro de la organización. Entre sus lecciones están que la estructura del PDF (columnas, tablas, figuras) dificulta la extracción y que se debe usar el mismo modelo de embeddings para indexar y para consultar.
+
+Este proyecto comparte esa ruta local y esas lecciones. Las resuelve con la extracción por página en PDF y por fila en hojas de cálculo, y con el identificador del modelo como parte de la clave del índice.
+
+*** RAG en un dominio regulado
+Amugongo et al. (2025) analizan 70 estudios de RAG en el área de la salud, seleccionados con la metodología PRISMA. Encuentran que la mayoría usa modelos comerciales, que pocos estudios evalúan aspectos éticos como la privacidad y que no existe un marco de evaluación estandarizado.
+
+La salud y la gestión de calidad automotriz comparten dos requisitos: la respuesta debe ser trazable a su fuente y los datos no deben exponerse. Por eso este proyecto ejecuta los modelos en servidores propios y define sus propias métricas de evaluación (sección de métricas técnicas).
+
+*** Comparación con este proyecto
+#+name: tab:trabajos
+#+caption: Comparación de los trabajos relacionados con este proyecto.
+#+attr_latex: :environment tabularx :width \textwidth :align lYYYY :placement [H] :font \footnotesize
+| Aspecto                  | Gao et al. (2023)              | Khan et al. (2024)                      | Amugongo et al. (2025)                 | Este proyecto                                   |
+|--------------------------+--------------------------------+-----------------------------------------+----------------------------------------+-------------------------------------------------|
+| Tipo de trabajo          | Revisión general               | Reporte de experiencia                  | Revisión sistemática (70 estudios)     | Implementación en una empresa                   |
+| Dominio                  | General                        | Documentos PDF                          | Salud                                  | Documentación de calidad en manufactura         |
+| Ejecución del modelo     | No aplica                      | Nube y local (Ollama)                   | Mayormente modelos comerciales         | Local (Ollama)                                  |
+| Control de acceso        | No se aborda                   | No se aborda                            | Privacidad poco evaluada               | Filtro por permisos dentro de la búsqueda       |
+| Citas verificables       | Se menciona como reto          | No se aborda                            | Trazabilidad como requisito            | Cada cita se comprueba contra lo recuperado     |
+| Evaluación               | Señala falta de estándares     | Cualitativa                             | Señala falta de estándares             | Métricas técnicas propias (recall@10, MRR y otras) |
+
+La aportación de este proyecto frente a esos trabajos es integrar RAG dentro de un sistema empresarial existente, con control de acceso por usuario, aislamiento entre organizaciones y citas verificadas, ejecutando todo en infraestructura propia.
 
 * Método y desarrollo
 
@@ -1028,6 +1057,8 @@ Como aprendizaje principal, en un sistema de calidad la propiedad decisiva no es
 :UNNUMBERED: t
 :END:
 #+latex: \addcontentsline{toc}{section}{Referencias bibliográficas y virtuales}
+Amugongo, L. M., Mascheroni, P., Brooks, S., Doering, S., & Seidel, J. (2025). Retrieval augmented generation for large language models in healthcare: A systematic review. /PLOS Digital Health, 4/(6), e0000877. https://doi.org/10.1371/journal.pdig.0000877
+
 Cockburn, A. (2005). /Hexagonal architecture/. Alistair Cockburn. https://alistair.cockburn.us/hexagonal-architecture/
 
 Evans, E. (2003). /Domain-driven design: Tackling complexity in the heart of software/. Addison-Wesley.
@@ -1046,45 +1077,47 @@ Jégou, H., Douze, M., & Schmid, C. (2011). Product quantization for nearest nei
 
 Jones, M., Bradley, J., & Sakimura, N. (2015). /JSON Web Token (JWT)/ (RFC 7519). Internet Engineering Task Force. https://doi.org/10.17487/RFC7519
 
+Khan, A. A., Hasan, M. T., Kemell, K. K., Rasku, J., & Abrahamsson, P. (2024). /Developing retrieval augmented generation (RAG) based LLM systems from PDFs: An experience report/. arXiv. https://arxiv.org/abs/2410.15944
+
 Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Küttler, H., Lewis, M., Yih, W., Rocktäschel, T., Riedel, S., & Kiela, D. (2020). Retrieval-augmented generation for knowledge-intensive NLP tasks. /Advances in Neural Information Processing Systems, 33/, 9459–9474.
 
 Malkov, Y. A., & Yashunin, D. A. (2018). Efficient and robust approximate nearest neighbor search using hierarchical navigable small world graphs. /IEEE Transactions on Pattern Analysis and Machine Intelligence, 42/(4), 824–836.
 
 Martin, R. C. (2017). /Clean architecture: A craftsman's guide to software structure and design/. Prentice Hall.
 
-Microsoft. (s.f.-a). /Introducción a .NET/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/dotnet/core/introduction
+Microsoft. (s.f.-a). /Introducción a .NET/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/dotnet/core/introduction
 
-Microsoft. (s.f.-b). /Información general sobre el análisis de código fuente de .NET/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/dotnet/fundamentals/code-analysis/overview
+Microsoft. (s.f.-b). /Información general sobre el análisis de código fuente de .NET/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/dotnet/fundamentals/code-analysis/overview
 
-Microsoft. (s.f.-c). /Información general de ASP.NET Core/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/aspnet/core/introduction-to-aspnet-core
+Microsoft. (s.f.-c). /Información general de ASP.NET Core/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/aspnet/core/introduction-to-aspnet-core
 
-Microsoft. (s.f.-d). /Elegir entre API basadas en controladores y API mínimas/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/aspnet/core/fundamentals/apis
+Microsoft. (s.f.-d). /Introducción a las API/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/aspnet/core/fundamentals/apis
 
-Microsoft. (s.f.-e). /IHttpClientFactory con .NET/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/dotnet/core/extensions/httpclient-factory
+Microsoft. (s.f.-e). /IHttpClientFactory con .NET/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/dotnet/core/extensions/httpclient-factory
 
-Microsoft. (s.f.-f). /Entity Framework Core: información general/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/ef/core/
+Microsoft. (s.f.-f). /Información general de Entity Framework Core/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/ef/core/
 
-Microsoft. (s.f.-g). /Tipo de datos vector/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/sql/t-sql/data-types/vector-data-type
+Microsoft. (s.f.-g). /Tipo de datos vectoriales/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/sql/t-sql/data-types/vector-data-type
 
-Microsoft. (s.f.-h). /Seguridad de nivel de fila/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/sql/relational-databases/security/row-level-security
+Microsoft. (s.f.-h). /Seguridad a nivel de fila/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/sql/relational-databases/security/row-level-security
 
-Microsoft. (s.f.-i). /Servicios de trabajo en .NET/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/dotnet/core/extensions/workers
+Microsoft. (s.f.-i). /Servicios de trabajo en .NET/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/dotnet/core/extensions/workers
 
-Microsoft. (s.f.-j). /Open XML SDK/. Microsoft Learn. Recuperado el [fecha], de https://learn.microsoft.com/es-es/office/open-xml/open-xml-sdk
+Microsoft. (s.f.-j). /Bienvenido al SDK de Open XML para Office/. Microsoft Learn. Recuperado el 26 de noviembre de 2026, de https://learn.microsoft.com/es-es/office/open-xml/open-xml-sdk
 
 Nottingham, M., Wilde, E., & Dalal, S. (2023). /Problem details for HTTP APIs/ (RFC 9457). Internet Engineering Task Force. https://doi.org/10.17487/RFC9457
 
-Ollama. (s.f.). /Ollama API/ [Documentación]. GitHub. Recuperado el [fecha], de https://github.com/ollama/ollama/blob/main/docs/api.md
+Ollama. (s.f.). /API/ [Documentación]. GitHub. Recuperado el 26 de noviembre de 2026, de https://github.com/ollama/ollama/blob/main/docs/api.md
 
 OpenAPI Initiative. (2024). /OpenAPI Specification/ (versión 3.1.1). https://spec.openapis.org/oas/v3.1.1
 
-PdfPig. (s.f.). /PdfPig/ [Software]. GitHub. Recuperado el [fecha], de https://github.com/UglyToad/PdfPig
+PdfPig. (s.f.). /PdfPig: Read and extract text and other content from PDFs in C#/ [Software]. GitHub. Recuperado el 26 de noviembre de 2026, de https://github.com/UglyToad/PdfPig
 
-pgvector. (s.f.). /pgvector: Open-source vector similarity search for Postgres/ [Software]. GitHub. Recuperado el [fecha], de https://github.com/pgvector/pgvector
+pgvector. (s.f.). /pgvector: Open-source vector similarity search for Postgres/ [Software]. GitHub. Recuperado el 26 de noviembre de 2026, de https://github.com/pgvector/pgvector
 
-Pinecone Systems. (s.f.). /Pinecone/. Recuperado el [fecha], de https://www.pinecone.io/
+Pinecone Systems. (s.f.). /Pinecone/. Recuperado el 26 de noviembre de 2026, de https://www.pinecone.io/
 
-Qdrant. (s.f.). /Qdrant: Vector database/. Recuperado el [fecha], de https://qdrant.tech/
+Qdrant. (s.f.). /Qdrant: Vector search engine/. Recuperado el 26 de noviembre de 2026, de https://qdrant.tech/
 
 Richardson, C. (2018). /Microservices patterns: With examples in Java/. Manning.
 
@@ -1092,7 +1125,7 @@ Taipalus, T. (2024). Vector database management systems: Fundamental concepts, u
 
 Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., & Polosukhin, I. (2017). Attention is all you need. /Advances in Neural Information Processing Systems, 30/.
 
-xUnit.net. (s.f.). /xUnit.net/ [Software]. Recuperado el [fecha], de https://xunit.net/
+xUnit.net. (s.f.). /xUnit.net/ [Software]. Recuperado el 26 de noviembre de 2026, de https://xunit.net/
 
 * Anexos
 :PROPERTIES:
